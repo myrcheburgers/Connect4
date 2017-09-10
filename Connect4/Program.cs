@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace Connect4
 {
-    // 6 x 7 board (i x j)
     class Connect4
     {
         static void Main(string[] args)
@@ -65,13 +64,18 @@ namespace Connect4
                 input = Console.ReadLine().ToLower();
                 switch (input)
                 {
+                    case "0":
+                    case "zero":
+                    case "ai":
                     case "1":
                     case "one":
                         {
-                            playerCount = 1;
-                            p1 = 1;
-                            p2 = 0;
-                            confirm = true;
+                            //playerCount = 1;
+                            //p1 = 1;
+                            //p2 = 0;
+                            //confirm = true;
+
+                            Console.WriteLine("AI not yet implemented.");
                             break;
                         }
                     case "2":
@@ -105,16 +109,23 @@ namespace Connect4
             while (!win)
             {
                 turn.Player(currentPlayer);
-                if (currentPlayer == p1)
-                {
-                    currentPlayer = p2;
-                }
-                else
-                {
-                    currentPlayer = p1;
-                }
                 Board.Display();
+                win = Board.CheckWin(currentPlayer);
+                  
+                if (!win)
+                {
+                    if (currentPlayer == p1)
+                    {
+                        currentPlayer = p2;
+                    }
+                    else
+                    {
+                        currentPlayer = p1;
+                    }
+                }
             }
+            Console.WriteLine("Winner: Player {0}", currentPlayer);
+            Console.WriteLine(Environment.NewLine);
         }
     }
 
@@ -122,6 +133,7 @@ namespace Connect4
     {
         int intInput;
         bool confirm = false;
+        
         public void Player(int id)
         {
             if (id != 0)
@@ -130,13 +142,23 @@ namespace Connect4
                 Console.WriteLine("Player {0}: Select column to play", id);
                 while (!confirm)
                 {
-                    //TODO: check to make sure column isn't full... possibly lose turn via Board class if i > 6
                     string input = Console.ReadLine();
                     if (Int32.TryParse(input, out intInput))
                     {
                         if (intInput >= 0 && intInput <= 6)
                         {
-                            confirm = true;
+                            if (Board.CheckValid(intInput) == true)
+                            {
+                                confirm = true;
+                            }
+                            else
+                            {
+                                Console.WriteLine("Player {0}: No more space available in column {1}. Try again.", id, intInput);
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Player {0}: Invalid input. Select an integer between 0 and 6.", id);
                         }
                     }
                     else
@@ -159,7 +181,10 @@ namespace Connect4
         const int iRowLength = 6;
         const int jColLength = 7;
         const string boardFill = "-";
+
+        public static string[] markers = { "A", "O", "X" }; // AI, human1, human2
         public static string[,] board = new string[iRowLength, jColLength];
+        public static bool[,] occupied = new bool[iRowLength, jColLength];
 
         public static void Initialize()
         {
@@ -168,39 +193,172 @@ namespace Connect4
                 for (int j = 0; j < jColLength; j++)
                 {
                     board[i, j] = boardFill;
+                    occupied[i, j] = false;
                 }
             }
         }
 
         public static void Display()
         {
-            for (int i = 0; i < iRowLength; i++)
+            //number labels
+            Console.Write(Environment.NewLine);
+            for (int j = 0; j < jColLength; j++)
+            {
+                Console.Write(String.Format("{0} ", j));
+            }
+            Console.Write(Environment.NewLine);
+            //board
+            for (int i = iRowLength - 1; i >= 0; i--)
             {
                 for (int j = 0; j < jColLength; j++)
                 {
                     Console.Write(String.Format("{0} ", board[i, j]));
                 }
-                //Console.Write(Environment.NewLine + Environment.NewLine);
                 Console.Write(Environment.NewLine);
             }
+            Console.Write(Environment.NewLine);
         }
 
         public static void Update(int j, int playerID)
         {
-            string[] markers = { "A", "O", "X" }; // AI, human1, human2
+            //string[] markers = { "A", "O", "X" }; // AI, human1, human2
             int i = 0;
 
             //while (board[i, j] != boardFill)
             //{
             //    i += 1;
             //}
-
+            while (occupied[i, j] == true)
+            {
+                i += 1;
+            }
             board[i, j] = markers[playerID];
+            occupied[i, j] = true;
         }
 
-        bool CheckWin(int playerID)
+        public static bool CheckValid(int j)
         {
-            //To be implemented
+            bool tf = false;
+            for (int i = 0; i < iRowLength; i++)
+            {
+                if (occupied[i, j] == true)
+                {
+                    tf = false;
+                }
+                else
+                {
+                    tf = true;
+                }
+            }
+            //I don't feel like figuring out why I can't just put returns in the if statement
+            return tf;
+        }
+
+        public static bool CheckWin(int playerID)
+        {
+            int i;
+            int j;
+            //check horizontal
+            for (i = 0; i < iRowLength; i++)
+            {
+                j = 0;
+                
+                //if ((Board.board[i, j] == Board.markers[playerID]) && (Board.board[i, j + 1] == Board.markers[playerID]) && (Board.board[i, j + 2] == Board.markers[playerID]) && (Board.board[i, j] + 3 == Board.markers[playerID]))
+                //{
+                //    return true;
+                //}
+
+                //I'm sure there's some stupid obvious reason for the above to not work, but:
+
+                if ((Board.board[i, j] == Board.markers[playerID]))
+                {
+                    if ((Board.board[i, j + 1] == Board.markers[playerID]))
+                    {
+                        if ((Board.board[i, j + 2] == Board.markers[playerID]))
+                        {
+                            if ((Board.board[i, j + 3] == Board.markers[playerID]))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                else if (j < jColLength - 4)
+                {
+                    j++;
+                }
+            }
+
+            //check vertical
+            for (j = 0; j < jColLength; j++)
+            {
+                i = 0;
+                if (Board.board[i, j] == Board.markers[playerID])
+                {
+                    if (Board.board[i + 1, j] == Board.markers[playerID])
+                    {
+                        if (Board.board[i + 2, j] == Board.markers[playerID])
+                        {
+                            if (Board.board[i + 3, j] == Board.markers[playerID])
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                else if (i < iRowLength - 4)
+                {
+                    i++;
+                }
+            }
+
+            //check diagonal ( / and \ )
+            //assume imax < jmax
+            // positive slope
+            for (j = 0; j < jColLength - 3; j++)
+            {
+                i = 0;
+                if (Board.board[i, j] == Board.markers[playerID])
+                {
+                    if (Board.board[i + 1, j + 1] == Board.markers[playerID])
+                    {
+                        if (Board.board[i + 2, j + 2] == Board.markers[playerID])
+                        {
+                            if (Board.board[i + 3, j + 3] == Board.markers[playerID])
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                else if (i < iRowLength - 4)
+                {
+                    i++;
+                }
+            }
+            // negative slope
+            for (j = 3; j < jColLength; j++)
+            {
+                i = 0;
+                if (Board.board[i, j] == Board.markers[playerID])
+                {
+                    if (Board.board[i + 1, j - 1] == Board.markers[playerID])
+                    {
+                        if (Board.board[i + 2, j - 2] == Board.markers[playerID])
+                        {
+                            if (Board.board[i + 3, j - 3] == Board.markers[playerID])
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                else if (i < iRowLength - 4)
+                {
+                    i++;
+                }
+            }
+
             return false;
         }
     }
